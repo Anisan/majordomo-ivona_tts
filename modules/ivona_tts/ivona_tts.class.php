@@ -114,15 +114,25 @@ function admin(&$out) {
  $this->getConfig();
  $out['ACCESS_KEY']=$this->config['ACCESS_KEY'];
  $out['SECRET_KEY']=$this->config['SECRET_KEY'];
+ $out['VOICE']=$this->config['VOICE'];
  if ($this->view_mode=='update_settings') {
    global $access_key;
    $this->config['ACCESS_KEY']=$access_key;
    global $secret_key;
    $this->config['SECRET_KEY']=$secret_key;
+   global $voice;
+   $this->config['VOICE']=$voice;
    $this->saveConfig();
    $this->redirect("?");
  }
+ 
+ global $clean;
+ if ($clean) {
+    array_map("unlink", glob(ROOT . "cached/voice/*_ivona.mp3"));
+    $this->redirect("?");
+ } 
 }
+
 /**
 * FrontEnd
 *
@@ -135,7 +145,6 @@ function usual(&$out) {
 }
  function processSubscription($event, $details='') {
   $this->getConfig();
-  print_r($details);
   if ($event=='SAY') {
     /* Хук на функцию say() */
     $level=$details['level'];
@@ -145,6 +154,7 @@ function usual(&$out) {
  
     $accessKey=$this->config['ACCESS_KEY'];
     $secretKey=$this->config['SECRET_KEY'];
+    $voice=$this->config['VOICE'];
     
     if ($level >= (int)getGlobal('minMsgLevel'))
     {
@@ -154,7 +164,7 @@ function usual(&$out) {
         
         if (!file_exists($cachedFileName))
         {
-            $obj = new IvonaTTS($accessKey,$secretKey,"ru-RU","Tatyana"); 
+            $obj = new IvonaTTS($accessKey,$secretKey,"ru-RU",$voice); 
             $obj->save_mp3($message,$cachedFileName);
         }
         @touch($cachedFileName);
