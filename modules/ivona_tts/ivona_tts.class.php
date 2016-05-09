@@ -143,9 +143,9 @@ function admin(&$out) {
 function usual(&$out) {
  $this->admin($out);
 }
- function processSubscription($event, $details='') {
+ function processSubscription($event, &$details) {
   $this->getConfig();
-  if ($event=='SAY') {
+  if ($event=='SAY' && !$details['ignoreVoice']) {
     /* Хук на функцию say() */
     $level=$details['level'];
     $message=$details['message'];
@@ -169,6 +169,7 @@ function usual(&$out) {
         }
         @touch($cachedFileName);
         playSound($cachedFileName, 1, $level);
+        $details['ignoreVoice'] = 1;
     }
   }
  }
@@ -180,7 +181,7 @@ function usual(&$out) {
 * @access private
 */
  function install($data='') {
-  subscribeToEvent($this->name, 'SAY');
+  subscribeToEvent($this->name, 'SAY', '', 15);
   parent::install();
  }
 // --------------------------------------------------------------------
