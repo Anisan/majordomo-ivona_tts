@@ -115,6 +115,7 @@ function admin(&$out) {
  $out['ACCESS_KEY']=$this->config['ACCESS_KEY'];
  $out['SECRET_KEY']=$this->config['SECRET_KEY'];
  $out['VOICE']=$this->config['VOICE'];
+ $out['SILENT']=$this->config['SILENT'];
  if ($this->view_mode=='update_settings') {
    global $access_key;
    $this->config['ACCESS_KEY']=$access_key;
@@ -122,6 +123,8 @@ function admin(&$out) {
    $this->config['SECRET_KEY']=$secret_key;
    global $voice;
    $this->config['VOICE']=$voice;
+   global $silent;
+   $this->config['SILENT']=$silent;
    $this->saveConfig();
    $this->redirect("?");
  }
@@ -155,21 +158,29 @@ function usual(&$out) {
     $accessKey=$this->config['ACCESS_KEY'];
     $secretKey=$this->config['SECRET_KEY'];
     $voice=$this->config['VOICE'];
-    
-    if ($level >= (int)getGlobal('minMsgLevel'))
+
+    $filename       = md5($message) . '_ivona.mp3';
+    $cachedVoiceDir = ROOT . 'cached/voice';
+    $cachedFileName = $cachedVoiceDir . '/' . $filename;
+
+    if ($this->config['SILENT']==1 || $level >= (int)getGlobal('minMsgLevel'))
     {
-        $filename       = md5($message) . '_ivona.mp3';
-        $cachedVoiceDir = ROOT . 'cached/voice';
-        $cachedFileName = $cachedVoiceDir . '/' . $filename;
-        
         if (!file_exists($cachedFileName))
         {
             $obj = new IvonaTTS($accessKey,$secretKey,"ru-RU",$voice); 
             $obj->save_mp3($message,$cachedFileName);
         }
+    }
+    
+    if ($level >= (int)getGlobal('minMsgLevel'))
+    {
+        
         @touch($cachedFileName);
-        playSound($cachedFileName, 1, $level);
-        $details['ignoreVoice'] = 1;
+        if (file_exists($cachedFileName))
+        {
+            playSound($cachedFileName, 1, $level);
+            $details['ignoreVoice'] = 1;
+        }
     }
   }
  }
@@ -183,6 +194,17 @@ function usual(&$out) {
  function install($data='') {
   subscribeToEvent($this->name, 'SAY', '', 15);
   parent::install();
+ }
+ /**
+* Uninstall
+*
+* Module uninstall routine
+*
+* @access public
+*/
+ function uninstall() {
+  unsubscribeFromEvent($this->name, 'SAY');
+  parent::uninstall();
  }
 // --------------------------------------------------------------------
 }
